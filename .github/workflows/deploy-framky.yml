@@ -1,0 +1,84 @@
+name: Deploy to Framky Server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-framky-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Backend: Cloudflare Workers (runs on GitHub-hosted runner)
+  deploy-backend:
+    name: Deploy Backend (CF Workers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Deploy to Cloudflare Workers
+        working-directory: apps/server
+        run: npx wrangler deploy --env framky
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+
+  # Frontend: OVH VPS (runs on self-hosted runner)
+  deploy-frontend:
+    name: Deploy Frontend (OVH VPS)
+    runs-on: [self-hosted, ovh-vps]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: apps/mail
+        run: pnpm build
+        env:
+          VITE_PUBLIC_BACKEND_URL: https://mail-api.framky.com
+          VITE_PUBLIC_APP_URL: https://mail.framky.com
+
+      - name: Deploy to server
+        run: sudo /usr/local/bin/deploy-zeroemail.sh "$GITHUB_WORKSPACE"
+
+  # DB migrations (after backend deploy, before frontend starts serving)
+  migrate-db:
+    name: Run DB Migrations
+    runs-on: [self-hosted, ovh-vps]
+    needs: [deploy-backend]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run Drizzle migrations
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.ZEROEMAIL_DATABASE_URL }}

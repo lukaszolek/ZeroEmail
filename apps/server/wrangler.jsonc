@@ -665,5 +665,142 @@
         },
       ],
     },
+    // =============================================
+    // Framky self-hosted: backend on CF Workers,
+    // frontend on OVH VPS, PG via Cloudflare Tunnel
+    // =============================================
+    "framky": {
+      "name": "zero-server-framky",
+      "rules": [
+        {
+          "type": "Text",
+          "globs": ["**/*.sql"],
+          "fallthrough": true,
+        },
+      ],
+      "triggers": {
+        "crons": ["0 0 * * *", "0 * * * *"],
+      },
+      "ai": {
+        "binding": "AI",
+      },
+      "observability": {
+        "enabled": true,
+      },
+      // --- R2 ---
+      "r2_buckets": [
+        {
+          "binding": "THREADS_BUCKET",
+          "bucket_name": "threads-framky",
+        },
+      ],
+      // --- Vectorize ---
+      "vectorize": [
+        {
+          "binding": "VECTORIZE",
+          "index_name": "threads-vector-framky",
+        },
+        {
+          "binding": "VECTORIZE_MESSAGE",
+          "index_name": "messages-vector-framky",
+        },
+      ],
+      // --- Hyperdrive (PG on OVH via Cloudflare Tunnel) ---
+      // ID will be created by: npx wrangler hyperdrive create zerodotemail-framky --connection-string="..."
+      "hyperdrive": [
+        {
+          "binding": "HYPERDRIVE",
+          "id": "37d0bfc18e7a46e9a128a393a607d23c",
+          "localConnectionString": "postgresql://postgres:postgres@localhost:5432/zerodotemail",
+        },
+      ],
+      // --- Durable Objects ---
+      "durable_objects": {
+        "bindings": [
+          { "name": "ZERO_AGENT", "class_name": "ZeroAgent" },
+          { "name": "ZERO_MCP", "class_name": "ZeroMCP" },
+          { "name": "ZERO_DB", "class_name": "ZeroDB" },
+          { "name": "ZERO_DRIVER", "class_name": "ZeroDriver" },
+          { "name": "THINKING_MCP", "class_name": "ThinkingMCP" },
+          { "name": "WORKFLOW_RUNNER", "class_name": "WorkflowRunner" },
+          { "name": "THREAD_SYNC_WORKER", "class_name": "ThreadSyncWorker" },
+          { "name": "SHARD_REGISTRY", "class_name": "ShardRegistry" },
+        ],
+      },
+      // --- Workflows ---
+      "workflows": [
+        {
+          "binding": "SYNC_THREADS_WORKFLOW",
+          "class_name": "SyncThreadsWorkflow",
+          "name": "sync-threads-workflow-framky",
+        },
+        {
+          "binding": "SYNC_THREADS_COORDINATOR_WORKFLOW",
+          "class_name": "SyncThreadsCoordinatorWorkflow",
+          "name": "sync-threads-coordinator-workflow-framky",
+        },
+      ],
+      // --- Queues ---
+      "queues": {
+        "producers": [
+          { "queue": "thread-queue-framky", "binding": "thread_queue" },
+          { "queue": "subscribe-queue-framky", "binding": "subscribe_queue" },
+          { "queue": "send-email-queue-framky", "binding": "send_email_queue" },
+        ],
+        "consumers": [
+          { "queue": "subscribe-queue-framky" },
+          { "queue": "thread-queue-framky" },
+          { "queue": "send-email-queue-framky" },
+        ],
+      },
+      // --- DO Migrations (fresh deploy — all SQLite for free plan) ---
+      "migrations": [
+        {
+          "tag": "v1",
+          "new_sqlite_classes": [
+            "ZeroAgent",
+            "ZeroMCP",
+            "ZeroDB",
+            "ZeroDriver",
+            "ThinkingMCP",
+            "WorkflowRunner",
+            "ThreadSyncWorker",
+            "ShardRegistry",
+          ],
+        },
+      ],
+      // --- Custom Domain ---
+      "routes": [{ "pattern": "mail-api.framky.com", "custom_domain": true }],
+      // --- Vars ---
+      "vars": {
+        "NODE_ENV": "production",
+        "COOKIE_DOMAIN": "framky.com",
+        "VITE_PUBLIC_BACKEND_URL": "https://mail-api.framky.com",
+        "VITE_PUBLIC_APP_URL": "https://mail.framky.com",
+        "DISABLE_CALLS": "true",
+        "DROP_AGENT_TABLES": "false",
+        "THREAD_SYNC_MAX_COUNT": "60",
+        "THREAD_SYNC_LOOP": "true",
+        "DISABLE_WORKFLOWS": "false",
+        "OTEL_EXPORTER_OTLP_ENDPOINT": "https://api.axiom.co/v1/traces",
+        "OTEL_SERVICE_NAME": "zero-email-server-framky",
+        "DD_API_KEY": "",
+        "DD_APP_KEY": "",
+        "DD_SITE": "datadoghq.com",
+      },
+      // --- KV Namespaces ---
+      "kv_namespaces": [
+        { "binding": "gmail_history_id", "id": "0dcd31781f864f13b71f28e3b06abf34" },
+        { "binding": "gmail_processing_threads", "id": "ea1416ccf6b546d4bd13aaedffbf3b35" },
+        { "binding": "subscribed_accounts", "id": "47482cd50aef4c5396ba7ef356654e9d" },
+        { "binding": "connection_labels", "id": "c2a4c7b288c0432c915233964bb43f0c" },
+        { "binding": "prompts_storage", "id": "24dc81bfb201446bb098e35c120d5853" },
+        { "binding": "gmail_sub_age", "id": "c244a5714819479c980307e5e08a8aae" },
+        { "binding": "pending_emails_status", "id": "d57de7ed47774b5cbe096d3e1e7328d2" },
+        { "binding": "pending_emails_payload", "id": "ff7c1c17925f43949260abf0ce5f262a" },
+        { "binding": "scheduled_emails", "id": "84089827d16343b7b677edb6912c320b" },
+        { "binding": "snoozed_emails", "id": "ded2685713024b1baa27229ac6455c44" },
+      ],
+    },
   },
 }
