@@ -29,9 +29,10 @@ jobs:
 
       - name: Deploy to Cloudflare Workers
         working-directory: apps/server
-        run: npx wrangler deploy --env framky
+        run: pnpm exec wrangler deploy --env framky
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: eb9f476cc3b945fd09fd1fe1dde9beb3
 
   # Frontend: OVH VPS (runs on self-hosted runner)
   deploy-frontend:
