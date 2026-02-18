@@ -28,7 +28,15 @@ jobs:
 
       - name: Deploy to Cloudflare Workers
         working-directory: apps/server
-        run: pnpm exec wrangler deploy --env framky
+        run: |
+          for i in 1 2 3; do
+            echo "Deploy attempt $i..."
+            pnpm exec wrangler deploy --env framky && exit 0
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "All 3 attempts failed"
+          exit 1
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: eb9f476cc3b945fd09fd1fe1dde9beb3
