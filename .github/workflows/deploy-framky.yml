@@ -10,10 +10,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Backend: Cloudflare Workers (runs on GitHub-hosted runner)
+  # Backend: Cloudflare Workers (runs on self-hosted to avoid CI startup CPU limit)
   deploy-backend:
     name: Deploy Backend (CF Workers)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ovh-vps]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +23,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
