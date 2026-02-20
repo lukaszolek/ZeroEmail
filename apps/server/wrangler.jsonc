@@ -781,6 +781,7 @@
         "VITE_PUBLIC_BACKEND_URL": "https://mail-api.framky.com",
         "VITE_PUBLIC_APP_URL": "https://mail.framky.com",
         "DISABLE_CALLS": "true",
+        "DISABLE_BILLING": "true",
         "DROP_AGENT_TABLES": "false",
         "THREAD_SYNC_MAX_COUNT": "60",
         "THREAD_SYNC_LOOP": "true",

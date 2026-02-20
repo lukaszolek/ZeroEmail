@@ -64,6 +64,7 @@ jobs:
         env:
           VITE_PUBLIC_BACKEND_URL: https://mail-api.framky.com
           VITE_PUBLIC_APP_URL: https://mail.framky.com
+          VITE_PUBLIC_BILLING_DISABLED: "true"
 
       - name: Deploy to server
         run: sudo /usr/local/bin/deploy-zeroemail.sh "$GITHUB_WORKSPACE"

@@ -59,7 +59,36 @@ const FEATURE_IDS = {
   BRAIN: 'brain-activity',
 } as const;
 
+const UNLIMITED_FEATURE: FeatureState = {
+  total: Infinity,
+  remaining: Infinity,
+  unlimited: true,
+  enabled: true,
+  usage: 0,
+  nextResetAt: null,
+  interval: '',
+  included_usage: 0,
+};
+
+const BILLING_DISABLED = import.meta.env.VITE_PUBLIC_BILLING_DISABLED === 'true';
+
 export const useBilling = () => {
+  if (BILLING_DISABLED) {
+    const noop = async (..._args: unknown[]) => {};
+    return {
+      isLoading: false,
+      customer: { products: [{ id: 'pro-example', name: 'Pro' }] } as ReturnType<typeof useCustomer>['customer'],
+      refetch: noop as unknown as ReturnType<typeof useCustomer>['refetch'],
+      attach: noop as unknown as ReturnType<typeof useAutumn>['attach'],
+      track: noop as unknown as ReturnType<typeof useAutumn>['track'],
+      openBillingPortal: noop as unknown as ReturnType<typeof useAutumn>['openBillingPortal'],
+      isPro: true,
+      chatMessages: UNLIMITED_FEATURE,
+      connections: UNLIMITED_FEATURE,
+      brainActivity: UNLIMITED_FEATURE,
+    };
+  }
+
   const { customer, refetch, isLoading, error } = useCustomer();
   const { attach, track, openBillingPortal } = useAutumn();
 
